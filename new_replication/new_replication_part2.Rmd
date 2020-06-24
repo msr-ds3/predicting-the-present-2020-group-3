@@ -1,0 +1,71 @@
+---
+title: "new_replication_part2"
+output: html_document
+Authors: "Rajiv Basnet & Krushang Shah"
+---
+
+
+```{r, results='hide', message=FALSE}
+library(tidyverse)
+library(dplyr)
+library(modelr)
+library(scales)
+library(lubridate)
+library(stats)
+```
+
+```{r}
+claims <- read.csv("unemployment_claims.csv")
+
+
+# unemployment_claims.csv has been acquired and formatted from:
+# https://fred.stlouisfed.org/series/CCSA
+# https://oui.doleta.gov/unemploy/claims.asp
+
+names(claims) <- c("date", "num_initial_claims")
+claims <- claims %>% mutate(num_initial_claims = as.numeric(gsub(",", "", num_initial_claims)), date = as.Date(date))
+
+claims <- claims %>% mutate(log_num_claims = log(num_initial_claims))
+
+claims
+
+claims_recession <- claims %>% filter(date >= "2007-12-01" & date <= "2011-07-02")
+claims_recession %>%
+  ggplot(aes(x = date, y = log_num_claims)) +
+  geom_line()
+```
+
+```{r}
+#baseline model
+
+claims_data <- claims %>% filter (date >= "2004-01-17" & date <= "2011-07-02")
+
+model_baseline <- lm(log_num_claims ~ lag(log_num_claims, 1), data = claims_data)
+
+claims_data
+
+summary(model_baseline)
+```
+=> The baseline model's summary statistics here are pretty close to that mentioned in the paper.
+
+
+```{r}
+
+#read and clean google trends data
+
+jobs <- read.csv("jobs_google_trends.csv")
+welfare <- read.csv("welfare_google_trends.csv")
+
+welfare <- welfare %>% 
+  mutate(date = as.Date(gsub("-", "/", paste(Month, "-01", sep = ""))))%>%
+  select(-Month)
+
+jobs <- jobs %>% 
+  mutate(date = as.Date(gsub("-", "/", paste(Month, "-01", sep = "")))) %>%
+  select(-Month)
+
+jobs
+welfare
+```
+
+
