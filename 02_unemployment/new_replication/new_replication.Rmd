@@ -1,0 +1,110 @@
+---
+title: "new_replication_part2"
+output: html_document
+Authors: "Rajiv Basnet & Krushang Shah"
+---
+
+
+```{r, results='hide', message=FALSE}
+library(tidyverse)
+library(dplyr)
+library(modelr)
+library(scales)
+library(lubridate)
+library(stats)
+```
+
+```{r}
+#read and clean unemployment_claims.csv
+
+claims <- read.csv("unemployment_claims.csv")
+
+# unemployment_claims.csv has been acquired and formatted from:
+# https://oui.doleta.gov/unemploy/claims.asp
+
+names(claims) <- c("date", "num_initial_claims")
+claims <- claims %>% 
+  mutate(num_initial_claims = as.numeric(gsub(",", "", num_initial_claims)), date = as.Date(date)) %>%  filter(date < "2020-05-30")
+```
+
+
+```{r}
+
+#read and clean google trends data
+
+jobs <- read.csv("jobs_google_trends.csv")
+welfare <- read.csv("welfare_google_trends.csv")
+
+welfare <- welfare %>% 
+  mutate(date = as.Date(gsub("-", "/", paste(Month, "-01", sep = ""))))%>%
+  select(-Month)
+
+jobs <- jobs %>% 
+  mutate(date = as.Date(gsub("-", "/", paste(Month, "-01", sep = "")))) %>%
+  select(-Month)
+
+```
+
+NOTE: Google trends data are obtained on a monthly basis.
+Thus, we will be matching the trends data with the claims data based on matching year and month. (Unlike the paper.)
+
+```{r}
+
+#merge google trends and unemployment data 
+
+claims_new <- claims %>% mutate(year = year(date), month = month(date))
+
+jobs_new <- jobs %>% mutate(year = year(date), month = month(date))
+welfare_new <- welfare %>% mutate(year = year(date), month = month(date))
+
+claims_with_trends <- claims_new %>% 
+  inner_join(jobs_new, by = c("year", "month")) %>%
+  select(-date.y) %>%
+  rename(date = date.x) %>%
+  inner_join(welfare_new, by = c("year", "month")) %>%
+  select(-date.y) %>%
+  rename(date = date.x)
+
+claims_with_trends
+
+```
+
+```{r}
+#our models
+
+#date >= "2004-01-17" & date <= "2011-07-02"
+
+claims_data <- claims_with_trends %>% 
+  filter (date >= "2004-01-17" & date <= "2011-07-02") %>%
+  mutate(log_num_claims = log(num_initial_claims))
+
+model_baseline <- lm(log_num_claims ~ lag(log_num_claims, 1), data = claims_data)
+model_with_trends <- lm(log_num_claims ~ lag(log_num_claims, 1) + jobs + welfare, data = claims_data)
+
+summary(model_baseline)
+summary(model_with_trends)
+```
+
+=> The baseline model's summary statistics here are pretty close to that mentioned in the paper.
+=>  Likewise, the model with google trends also have statistics that are close to mentioned in the paper (not exact though).
+
+Possible Causes: 
+ - Use of monthly trends data to match the weekly data on original claims data.
+ - Seasonal adjustment factors
+
+Nevertheless, the addition of google trends data only had very slight improvement for the prediction (with regard to R-squared).
+
+
+```{r}
+# reproducing the visualizations
+
+claims_data %>%
+  filter (date >= "2008-01-01" & date <= "2012-01-01") %>%
+  ggplot(aes(x = date, y = log_num_claims)) +
+  geom_line()
+
+
+```
+
+
+
