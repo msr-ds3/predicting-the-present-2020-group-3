@@ -1,0 +1,126 @@
+---
+title: "Predicting the present - 3.1 - Testing Author's Data"
+output:
+  html_document:
+    df_print: paged
+---
+
+# Predicting using the author data
+
+## Setup
+```{r}
+library(tidyverse)
+library(modelr)
+library(plotly)
+library(gtrendsR)
+
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Load Data
+From the below mentioned CSV files, the appropriate one can be selected
+```{r}
+merged_author <- read_csv("merged_author.csv")
+#merged <- read_csv("merged_extracted.csv")
+#merged <- read_csv("merged_present.csv")
+#merged <- read_csv("merged.csv")
+
+merged_author$sales<-log(merged_author$sales)
+merged_author$Period<-as.Date(merged_author$Period,"%m/%d/%Y")
+rows <- nrow(merged_author)
+```
+
+## Model Summary
+```{r}
+model1_a <- lm(data = merged_author, sales~lag(sales, 1)+lag(sales,12))
+summary(model1_a)
+model2_a <- lm(data = merged_author, sales~lag(sales, 1)+lag(sales,12) + suvs + insurance)
+summary(model2_a)
+```
+
+## Predict Current Month Data
+```{r}
+baseline_a <- merged_author
+trends_a <- merged_author
+# creating baseline 
+for (i in 18:rows){
+  merged_t_a <- merged_author[1:i-1,]
+  model1_a <- lm(data = merged_t_a, sales~lag(sales, 1)+lag(sales,12))
+  model2_a <- lm(data = merged_t_a, sales~lag(sales, 1)+lag(sales,12)+ suvs + insurance)
+  baseline_a$sales[i] <- predict(model1_a,merged_author[1:i,])[i]
+  trends_a$sales[i] <- predict(model2_a,merged_author[1:i,])[i]
+}
+```
+
+## Compile Data
+```{r}
+actual_a <- merged_author[18:rows,] %>% mutate(label="actual")
+baseline_a <- baseline_a[18:rows,] %>% mutate(label="baseline")
+trends_a <- trends_a[18:rows,] %>% mutate(label="trends")
+```
+
+## Plot
+```{r}
+author_plot_data <- rbind(actual_a, baseline_a, trends_a)
+ggplotly(ggplot(author_plot_data, aes(x=Period, y = sales, color = label, linetype = label))+
+  geom_line()+
+  scale_colour_manual(values=c("black", "red","grey"))+
+  scale_linetype_manual(values = c("solid", "dashed", "solid"))+
+  ylab('log(sales)')+
+  xlab('period'))
+```
+
+# Predicting using the extracted data
+
+## Load Data
+From the below mentioned CSV files, the appropriate one can be selected
+```{r}
+#merged <- read_csv("merged_author.csv")
+merged_extracted <- read_csv("merged_extracted.csv")
+#merged <- read_csv("merged_present.csv")
+#merged <- read_csv("merged.csv")
+
+merged_extracted$sales<-log(merged_extracted$sales)
+merged_extracted$Period<-as.Date(merged_extracted$Period,"%m/%d/%Y")
+rows <- nrow(merged_extracted)
+```
+
+## Model Summary
+```{r}
+model1_e <- lm(data = merged_extracted, sales~lag(sales, 1)+lag(sales,12))
+summary(model1_e)
+model2_e <- lm(data = merged_extracted, sales~lag(sales, 1)+lag(sales,12) + suvs + insurance)
+summary(model2_e)
+```
+
+## Predict Current Month Data
+```{r}
+baseline_e <- merged_extracted
+trends_e <- merged_extracted
+# creating baseline 
+for (i in 18:rows){
+  merged_t_e <- merged_extracted[1:i-1,]
+  model1_e <- lm(data = merged_t_e, sales~lag(sales, 1)+lag(sales,12))
+  model2_e <- lm(data = merged_t_e, sales~lag(sales, 1)+lag(sales,12)+ suvs + insurance)
+  baseline_e$sales[i] <- predict(model1_e,merged_extracted[1:i,])[i]
+  trends_e$sales[i] <- predict(model2_e,merged_extracted[1:i,])[i]
+}
+```
+
+## Compile Data
+```{r}
+actual_e <- merged_extracted[18:rows,] %>% mutate(label="actual")
+baseline_e <- baseline_e[18:rows,] %>% mutate(label="baseline")
+trends_e <- trends_e[18:rows,] %>% mutate(label="trends")
+```
+
+## Plot
+```{r}
+extracted_plot_data <- rbind(actual_e, baseline_e, trends_e)
+ggplotly(ggplot(extracted_plot_data, aes(x=Period, y = sales, color = label, linetype = label))+
+  geom_line()+
+  scale_colour_manual(values=c("black", "red","grey"))+
+  scale_linetype_manual(values = c("solid", "dashed", "solid"))+
+  ylab('log(sales)')+
+  xlab('period'))
+```
