@@ -31,6 +31,9 @@ model_with_trends <- lm(sales~lag(sales,1)+lag(sales,12) + suvs + insurance, dat
 summary(model_with_trends)
 ```
 
+All the coefficients and R-squared for the regressions are exactly as the paper claims. 
+
+
 ```{r}
 #add predictions with both models (Without Rolling Window)s
 data_with_pred <- data %>%
@@ -115,6 +118,20 @@ mae_trends
 MAE Baseline is `r mae_baseline`
 and MAE With Trends is `r mae_trends`
 
-The graph and MAE's match excatly as in the paper. 
-Thus, it is reproducible.
+The graph and MAE's (both with and without Google trends data) match exactly as in the paper. 
 
+```{r}
+#Checking Trends During the Recession (December 2007 through June 2009)
+
+data_recession <- all_data %>%
+  filter(Period >= "2007-12-01" & Period <= "2009-06-01")
+
+mae_r_baseline <- sum(abs(data_recession$actual - data_recession$baseline), na.rm = TRUE)/nrow(data_recession)
+
+mae_r_trends <- sum(abs(data_recession$actual - data_recession$trends), na.rm = TRUE)/nrow(data_recession)
+
+mae_r_baseline
+mae_r_trends
+
+```
+The MAE's during the recession (both with and without Google trends data) also match exactly as in the paper.

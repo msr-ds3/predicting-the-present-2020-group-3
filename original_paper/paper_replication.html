@@ -425,6 +425,7 @@ summary(model_with_trends)</code></pre>
 ##   (12 observations deleted due to missingness)
 ## Multiple R-squared:  0.8179, Adjusted R-squared:  0.808 
 ## F-statistic: 83.08 on 4 and 74 DF,  p-value: &lt; 2.2e-16</code></pre>
+<p>All the coefficients and R-squared for the regressions are exactly as the paper claims.</p>
 <pre class="r"><code>#add predictions with both models (Without Rolling Window)s
 data_with_pred &lt;- data %&gt;%
   add_predictions(model_baseline, var =&quot;base&quot;) %&gt;% 
@@ -501,7 +502,21 @@ mae_baseline</code></pre>
 <pre class="r"><code>mae_trends</code></pre>
 <pre><code>## [1] 0.05667658</code></pre>
 <p>MAE Baseline is 0.0634398 and MAE With Trends is 0.0566766</p>
-<p>The graph and MAE’s match excatly as in the paper. Thus, it is reproducible.</p>
+<p>The graph and MAE’s (both with and without Google trends data) match exactly as in the paper.</p>
+<pre class="r"><code>#Checking Trends During the Recession (December 2007 through June 2009)
+
+data_recession &lt;- all_data %&gt;%
+  filter(Period &gt;= &quot;2007-12-01&quot; &amp; Period &lt;= &quot;2009-06-01&quot;)
+
+mae_r_baseline &lt;- sum(abs(data_recession$actual - data_recession$baseline), na.rm = TRUE)/nrow(data_recession)
+
+mae_r_trends &lt;- sum(abs(data_recession$actual - data_recession$trends), na.rm = TRUE)/nrow(data_recession)
+
+mae_r_baseline</code></pre>
+<pre><code>## [1] 0.08869325</code></pre>
+<pre class="r"><code>mae_r_trends</code></pre>
+<pre><code>## [1] 0.06965812</code></pre>
+<p>The MAE’s during the recession (both with and without Google trends data) also match exactly as in the paper.</p>
 
 
 
