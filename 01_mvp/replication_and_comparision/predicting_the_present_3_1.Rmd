@@ -1,18 +1,21 @@
 ---
 title: "Predicting the present - 3.1 - Testing Author's Data"
 output:
-  html_document:
-    df_print: paged
+html_document:
+df_print: paged
+author: "Krushang Shah & Rajiv Basnet"
+date: "6/23/2020"
 ---
 
 # Predicting using the author data
 
 ## Setup
-```{r}
+```{r setup, include=FALSE, message=FALSE}
 library(tidyverse)
 library(modelr)
 library(plotly)
 library(gtrendsR)
+library(caret)
 
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -57,6 +60,21 @@ for (i in 18:rows){
 actual_a <- merged_author[18:rows,] %>% mutate(label="actual")
 baseline_a <- baseline_a[18:rows,] %>% mutate(label="baseline")
 trends_a <- trends_a[18:rows,] %>% mutate(label="trends")
+```
+
+## Mean Absolute Error
+```{r}
+MAE(baseline_a$sales,actual_a$sales)
+MAE(trends_a$sales,actual_a$sales)
+```
+
+## Recession MAE
+```{r}
+recession_trends_a <- trends_a %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
+recession_base_a <- baseline_a %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
+recession_actual_a <- actual_a %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
+MAE(recession_base_a$sales,recession_actual_a$sales)
+MAE(recession_trends_a$sales,recession_actual_a$sales)
 ```
 
 ## Plot
@@ -112,6 +130,21 @@ for (i in 18:rows){
 actual_e <- merged_extracted[18:rows,] %>% mutate(label="actual")
 baseline_e <- baseline_e[18:rows,] %>% mutate(label="baseline")
 trends_e <- trends_e[18:rows,] %>% mutate(label="trends")
+```
+
+## Mean Absolute Error
+```{r}
+MAE(baseline_e$sales,actual_e$sales)
+MAE(trends_e$sales,actual_e$sales)
+```
+
+## Recession MAE
+```{r}
+recession_trends_e <- trends_e %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
+recession_base_e <- baseline_e %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
+recession_actual_e <- actual_e %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
+MAE(recession_base_e$sales,recession_actual_e$sales)
+MAE(recession_trends_e$sales,recession_actual_e$sales)
 ```
 
 ## Plot
