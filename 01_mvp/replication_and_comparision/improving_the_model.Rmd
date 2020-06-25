@@ -15,14 +15,6 @@ library(gtrendsR)
 library(caret)
 ```
 
-Let's check with author's data first.
-
-```{r}
-author_data <- read.csv("merged_author.csv")
-author_data <- author_data %>% mutate(sales = log(sales), Period = as.Date(Period))
-head(author_data)
-```
-
 Check and work with the data from 2004 to present:
 
 ```{r}
@@ -58,8 +50,15 @@ all_data[18:num_rows, ] %>%
 ```
 
 
+Let's check what improvements could be made to the models.
 => Would the models perform better if we were to use lags though (1:n months)?
 Let's check it with author's data.
+
+```{r}
+author_data <- read.csv("merged_author.csv")
+author_data <- author_data %>% mutate(sales = log(sales), Period = as.Date(Period))
+head(author_data)
+```
 
 ```{r results='hide', message=FALSE, warning= FALSE}
 # checking model performances using data of (1 through 5) months before.
