@@ -1,0 +1,109 @@
+---
+title: "Exploring the possibilities for Future Prediction"
+output:
+html_document:
+df_print: paged
+author: "Krushang Shah & Rajiv Basnet"
+date: "6/24/2020"
+---
+
+```{r setup, results='hide', message=FALSE}
+library(tidyverse)
+library(modelr)
+library(plotly)
+library(gtrendsR)
+library(caret)
+```
+
+=> Increasing the number of lags would help forecasting the future sales.
+But, how would the Mean Absolute Error change with increasing lag?
+Would the MAE be reasonable so as to make predictions for future N number of months?
+
+Let's check with author's data first.
+
+```{r}
+author_data <- read.csv("merged_author.csv")
+author_data <- author_data %>% mutate(sales = log(sales), Period = as.Date(Period))
+head(author_data)
+```
+
+```{r}
+
+#Using the Rolling Window 
+
+num_lags <- 1:11
+num_rows <- nrow(author_data)
+
+mae_baseline <-c()
+mae_trends <- c()
+
+for (n in num_lags) {
+  
+  all_data <- author_data %>% 
+    rename(actual = sales) %>%
+    mutate(baseline = NA, trends = NA) %>%
+    mutate(lagn = lag(actual, n), lag12 = lag(actual, (12)))
+
+  K <- 17
+  
+  for (k in K: (num_rows - 1) ) {
+    model1 <- lm(actual ~ lagn + lag12, data = all_data[1:k, ])
+    model2 <- lm(actual ~ lagn + lag12 + suvs + insurance, data = all_data[1:k, ])
+    all_data$baseline[k + 1] <- predict(model1, all_data[k + 1,])
+    all_data$trends[k + 1] <- predict(model2, all_data[k + 1,])
+  }
+  
+  mae_baseline[n] <- sum(abs(all_data$actual - all_data$baseline), na.rm = TRUE)/(num_rows - 17)
+  mae_trends[n] <- sum(abs(all_data$actual - all_data$trends), na.rm = TRUE)/(num_rows - 17)
+}
+```
+
+```{r}
+#plot MAE
+plot_mae <- data.frame(num_lags, mae_baseline, mae_trends) %>%
+  pivot_longer(c(-num_lags), names_to = "mae_type", values_to = "mae")
+ggplot(plot_mae, aes(x = num_lags, y = mae, color = mae_type)) +
+  geom_line() +
+  labs(x = "Number of Lags", y = "MAE")
+
+```
+=> Increasing the number of lags did not actually perform well with fitting the author's data. Thus, we need a different way in order to make future predictions instead of using the lag directly.
+
+Check and work with the data from 2004 to present:
+
+```{r}
+data <- read.csv("merged_present.csv")
+data <- data %>% mutate(sales = log(sales), Period = as.Date(Period,"%m/%d/%Y"))
+head(data)
+```
+```{r}
+
+#using models defined in the paper to check how well it works with data from 2004 to present 
+all_data <- data %>% 
+  rename(actual = sales) %>%
+  mutate(baseline = NA, trends = NA) %>%
+  mutate(lag1 = lag(actual, 1), lag12 = lag(actual, 12))
+
+K <- 17
+num_rows <- nrow(all_data)
+for (k in K: (num_rows -1) ) {
+  model1 <- lm(actual ~ lag1 + lag12, data = all_data[1:k, ])
+  model2 <- lm(actual ~ lag1 + lag12 + suvs + insurance, data = all_data[1:k, ])
+  all_data$baseline[k + 1] <- predict(model1, all_data[k + 1,])
+  all_data$trends[k + 1] <- predict(model2, all_data[k + 1,])
+}
+
+all_data[18:num_rows, ] %>% 
+  pivot_longer(c("actual", "baseline", "trends"), names_to = "sales_type", values_to = "num_of_sales") %>%
+  ggplot(aes(x = Period, y = num_of_sales, group = sales_type, color = sales_type)) +
+  geom_line(aes(y = num_of_sales, color = sales_type, linetype= sales_type)) +
+  scale_color_manual(values=c("black", "red", "darkgray")) +
+  scale_linetype_manual(values=c("solid", "dashed", "solid")) +
+  labs(x = "Date", y = "Log of Sales")
+
+all_data
+```
+
+
+
+

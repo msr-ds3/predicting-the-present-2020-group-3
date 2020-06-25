@@ -1,5 +1,5 @@
 ---
-title: "new_replication_part2"
+title: "Replication of Predicting the Present with Google Trends - Unemployment Benefits"
 output: html_document
 Authors: "Rajiv Basnet & Krushang Shah"
 ---
