@@ -116,8 +116,11 @@ ggplotly(ggplot(author_plot_data, aes(x=Period, y = sales, color = label, linety
 The proper version of CSV files with cleaned data is given below which I recreated for the replication of the results that the authors obtained. We modify it a little based on the description in the paper. This data is extracted from the original sources mentioned by the author in the paper. The format of Google Trends data has since changed and hence there is a very small difference between the authors results and the replicated results. 
 
 Sources:
-[Sales: Census](https://www.census.gov/econ/currentdata/dbsearch?program=MARTS&startYear=2004&endYear=2011&categories%5B%5D=441&dataType=SM&geoLevel=US&notAdjusted=1&submit=GET+DATA&releaseScheduleId=)
-[Trucks & SUVs: Google Trends](https://trends.google.com/trends/explore?cat=610&date=2004-01-01%202011-07-01&geo=US)
+
+[Sales: Census](https://www.census.gov/econ/currentdata/dbsearch?program=MARTS&startYear=2004&endYear=2011&categories%5B%5D=441&dataType=SM&geoLevel=US&notAdjusted=1&submit=GET+DATA&releaseScheduleId=),
+
+[Trucks & SUVs: Google Trends](https://trends.google.com/trends/explore?cat=610&date=2004-01-01%202011-07-01&geo=US),
+
 [Auto Insurance: Google Trends](https://trends.google.com/trends/explore?cat=467&date=2004-01-01%202011-07-01&geo=US)
 
 ```{r warning=FALSE, message=FALSE}
