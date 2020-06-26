@@ -1,24 +1,36 @@
 ---
-title: "Predicting the present - 3.1 - Testing Author's Data"
+title: "Replicate paper"
+author: "Krushang Shah and Rajiv Basnet"
+date: "6/25/2020"
 output:
-html_document:
-df_print: paged
-author: "Krushang Shah & Rajiv Basnet"
-date: "6/23/2020"
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '3'
+  pdf_document:
+    toc: yes
+    toc_depth: 3
 ---
-
 # Predicting using the author data
 
 ## Setup
 ```{r setup, warning=FALSE, message=FALSE}
+library(scales)
 library(tidyverse)
-library(modelr)
 library(plotly)
-library(gtrendsR)
-library(caret)
+library(lubridate)
 library(broom)
+library(modelr)
+library(readxl)
+library(zoo)
+library(caret)
+theme_set(theme_bw())
 
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
 ```
 
 ## Load Data
@@ -32,7 +44,7 @@ rows <- nrow(merged_author)
 ```
 
 ## Model Summary
-```{r warning=FALSE, message=FALSE}
+```{r}
 model1_a <- lm(data = merged_author, sales~lag(sales, 1)+lag(sales,12))
 tidy(model1_a)
 glance(model1_a)
@@ -100,7 +112,7 @@ rows <- nrow(merged_extracted)
 ```
 
 ## Model Summary
-```{r warning=FALSE, message=FALSE}
+```{r}
 model1_e <- lm(data = merged_extracted, sales~lag(sales, 1)+lag(sales,12))
 tidy(model1_e)
 glance(model1_e)

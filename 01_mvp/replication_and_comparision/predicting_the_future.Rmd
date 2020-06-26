@@ -1,0 +1,104 @@
+---
+title: "Predicting "
+author: "Krushang Shah and Rajiv Basnet"
+date: "6/25/2020"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '3'
+  pdf_document:
+    toc: yes
+    toc_depth: 3
+---
+# Predicting using the author data
+
+## Setup
+```{r setup, warning=FALSE, message=FALSE}
+library(scales)
+library(tidyverse)
+library(plotly)
+library(lubridate)
+library(broom)
+library(modelr)
+library(readxl)
+library(zoo)
+library(caret)
+theme_set(theme_bw())
+
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE
+)
+```
+
+## Load Data
+From the below mentioned CSV files, the appropriate one can be selected
+```{r}
+merged_author <- read_csv("merged_present.csv")
+
+merged_author$sales<-log(merged_author$sales)
+merged_author$Period<-as.Date(merged_author$Period,"%m/%d/%Y")
+rows <- nrow(merged_author)
+```
+
+## Predict Current Month Data
+```{r}
+model_data <- merged_author
+model_data <- model_data %>% mutate(lag2 =                                       lag(sales,2),lag12=lag(sales,12),suvs1=lag(suvs,1),insurance1=lag(insurance,1))
+model_base <- model_data
+model_trends <- model_data
+
+K <- 96
+
+for (i in K:rows){
+  model_t <- model_data[1:i-1,]
+  model1_t <- lm(data = model_t, sales~lag2+lag12)
+  model2_t <- lm(data = model_t, sales~lag2+lag12+ suvs1 + insurance1)
+  model_base$sales[i] <- predict(model1_t,model_data[1:i,])[i]
+  model_trends$sales[i] <- predict(model2_t,model_data[1:i,])[i]
+}
+tidy(model1_t)
+glance(model1_t)
+tidy(model2_t)
+glance(model2_t)
+```
+
+## Compile Data
+```{r}
+model_actual <- model_data[K:rows,] %>% mutate(label="actual")
+model_base <- model_base[K:rows,] %>% mutate(label="baseline")
+model_trends <- model_trends[K:rows,] %>% mutate(label="trends")
+```
+
+## Mean Absolute Error
+```{r}
+MAE(model_base$sales,model_actual$sales)
+MAE(model_trends$sales,model_actual$sales)
+```
+
+## Recession MAE
+```{r}
+period_start <- "2012-01-01"
+period_end <- "2020-01-01"
+part_trends_mod <- model_trends %>% filter(Period>=period_start& Period<=period_end)
+part_base_mod <- model_base %>% filter(Period>=period_start& Period<=period_end)
+part_actual_mod <- model_actual %>% filter(Period>=period_start& Period<=period_end)
+MAE(part_base_mod$sales,part_actual_mod$sales)
+MAE(part_trends_mod$sales,part_actual_mod$sales)
+rsquare(model1_t,part_actual_mod)
+cor(part_base_mod$sales,part_actual_mod$sales)^2
+cor(part_trends_mod$sales,part_actual_mod$sales)^2
+```
+
+## Plot
+```{r}
+model_plot_data <- rbind(model_actual, model_base, model_trends) %>% filter(Period>=period_start& Period<=period_end)
+ggplotly(ggplot(model_plot_data, aes(x=Period, y = sales, color = label, linetype = label))+
+  geom_line()+
+  scale_colour_manual(values=c("black", "red","grey"))+
+  scale_linetype_manual(values = c("solid", "dashed", "solid"))+
+  ylab('log(sales)')+
+  xlab('period'))
+```
