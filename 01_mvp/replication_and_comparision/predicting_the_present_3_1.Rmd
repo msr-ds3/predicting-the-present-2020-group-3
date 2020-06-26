@@ -10,23 +10,21 @@ date: "6/23/2020"
 # Predicting using the author data
 
 ## Setup
-```{r setup, include=FALSE, message=FALSE}
+```{r setup, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(modelr)
 library(plotly)
 library(gtrendsR)
 library(caret)
+library(broom)
 
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ## Load Data
 From the below mentioned CSV files, the appropriate one can be selected
-```{r}
+```{r warning=FALSE, message=FALSE}
 merged_author <- read_csv("merged_author.csv")
-#merged <- read_csv("merged_extracted.csv")
-#merged <- read_csv("merged_present.csv")
-#merged <- read_csv("merged.csv")
 
 merged_author$sales<-log(merged_author$sales)
 merged_author$Period<-as.Date(merged_author$Period,"%m/%d/%Y")
@@ -34,18 +32,19 @@ rows <- nrow(merged_author)
 ```
 
 ## Model Summary
-```{r}
+```{r warning=FALSE, message=FALSE}
 model1_a <- lm(data = merged_author, sales~lag(sales, 1)+lag(sales,12))
-summary(model1_a)
+tidy(model1_a)
+glance(model1_a)
 model2_a <- lm(data = merged_author, sales~lag(sales, 1)+lag(sales,12) + suvs + insurance)
-summary(model2_a)
+tidy(model2_a)
+glance(model2_a)
 ```
 
 ## Predict Current Month Data
-```{r}
+```{r warning=FALSE, message=FALSE}
 baseline_a <- merged_author
 trends_a <- merged_author
-# creating baseline 
 for (i in 18:rows){
   merged_t_a <- merged_author[1:i-1,]
   model1_a <- lm(data = merged_t_a, sales~lag(sales, 1)+lag(sales,12))
@@ -56,20 +55,20 @@ for (i in 18:rows){
 ```
 
 ## Compile Data
-```{r}
+```{r warning=FALSE, message=FALSE}
 actual_a <- merged_author[18:rows,] %>% mutate(label="actual")
 baseline_a <- baseline_a[18:rows,] %>% mutate(label="baseline")
 trends_a <- trends_a[18:rows,] %>% mutate(label="trends")
 ```
 
 ## Mean Absolute Error
-```{r}
+```{r warning=FALSE, message=FALSE}
 MAE(baseline_a$sales,actual_a$sales)
 MAE(trends_a$sales,actual_a$sales)
 ```
 
 ## Recession MAE
-```{r}
+```{r warning=FALSE, message=FALSE}
 recession_trends_a <- trends_a %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
 recession_base_a <- baseline_a %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
 recession_actual_a <- actual_a %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
@@ -78,7 +77,7 @@ MAE(recession_trends_a$sales,recession_actual_a$sales)
 ```
 
 ## Plot
-```{r}
+```{r warning=FALSE, message=FALSE}
 author_plot_data <- rbind(actual_a, baseline_a, trends_a)
 ggplotly(ggplot(author_plot_data, aes(x=Period, y = sales, color = label, linetype = label))+
   geom_line()+
@@ -92,11 +91,8 @@ ggplotly(ggplot(author_plot_data, aes(x=Period, y = sales, color = label, linety
 
 ## Load Data
 From the below mentioned CSV files, the appropriate one can be selected
-```{r}
-#merged <- read_csv("merged_author.csv")
+```{r warning=FALSE, message=FALSE}
 merged_extracted <- read_csv("merged_extracted.csv")
-#merged <- read_csv("merged_present.csv")
-#merged <- read_csv("merged.csv")
 
 merged_extracted$sales<-log(merged_extracted$sales)
 merged_extracted$Period<-as.Date(merged_extracted$Period,"%m/%d/%Y")
@@ -104,18 +100,19 @@ rows <- nrow(merged_extracted)
 ```
 
 ## Model Summary
-```{r}
+```{r warning=FALSE, message=FALSE}
 model1_e <- lm(data = merged_extracted, sales~lag(sales, 1)+lag(sales,12))
-summary(model1_e)
+tidy(model1_e)
+glance(model1_e)
 model2_e <- lm(data = merged_extracted, sales~lag(sales, 1)+lag(sales,12) + suvs + insurance)
-summary(model2_e)
+tidy(model2_e)
+glance(model2_e)
 ```
 
 ## Predict Current Month Data
-```{r}
+```{r warning=FALSE, message=FALSE}
 baseline_e <- merged_extracted
 trends_e <- merged_extracted
-# creating baseline 
 for (i in 18:rows){
   merged_t_e <- merged_extracted[1:i-1,]
   model1_e <- lm(data = merged_t_e, sales~lag(sales, 1)+lag(sales,12))
@@ -126,20 +123,20 @@ for (i in 18:rows){
 ```
 
 ## Compile Data
-```{r}
+```{r warning=FALSE, message=FALSE}
 actual_e <- merged_extracted[18:rows,] %>% mutate(label="actual")
 baseline_e <- baseline_e[18:rows,] %>% mutate(label="baseline")
 trends_e <- trends_e[18:rows,] %>% mutate(label="trends")
 ```
 
 ## Mean Absolute Error
-```{r}
+```{r warning=FALSE, message=FALSE}
 MAE(baseline_e$sales,actual_e$sales)
 MAE(trends_e$sales,actual_e$sales)
 ```
 
 ## Recession MAE
-```{r}
+```{r warning=FALSE, message=FALSE}
 recession_trends_e <- trends_e %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
 recession_base_e <- baseline_e %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
 recession_actual_e <- actual_e %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
@@ -148,7 +145,7 @@ MAE(recession_trends_e$sales,recession_actual_e$sales)
 ```
 
 ## Plot
-```{r}
+```{r warning=FALSE, message=FALSE}
 extracted_plot_data <- rbind(actual_e, baseline_e, trends_e)
 ggplotly(ggplot(extracted_plot_data, aes(x=Period, y = sales, color = label, linetype = label))+
   geom_line()+
