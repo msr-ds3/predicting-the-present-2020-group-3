@@ -12,6 +12,7 @@ output:
     toc_depth: 3
 ---
 # Predicting using the author data
+This notebook is based on the replication of results from the paper [Predicting the Present with Google Trends.](http://people.ischool.berkeley.edu/~hal/Papers/2011/ptp.pdf)
 
 ## Setup
 ```{r setup, warning=FALSE, message=FALSE}
@@ -34,7 +35,7 @@ knitr::opts_chunk$set(
 ```
 
 ## Load Data
-From the below mentioned CSV files, the appropriate one can be selected
+The proper version of CSV files with cleaned data is given below by the author for replication of the results that the authors obtained. We modify it a little based on the description in the paper. 
 ```{r warning=FALSE, message=FALSE}
 merged_author <- read_csv("merged_author.csv")
 
@@ -44,16 +45,22 @@ rows <- nrow(merged_author)
 ```
 
 ## Model Summary
+The model1_a shows the author's version of the baseline model which uses the values from the past month and also the data from a year before for prediction. Example, to predict the sales of June 2007, it uses the sales of May 2007 and June 2006.
 ```{r}
 model1_a <- lm(data = merged_author, sales~lag(sales, 1)+lag(sales,12))
 tidy(model1_a)
 glance(model1_a)
+```
+
+The model2_a shows the author's version of the trends model which uses the values from the past month, the data from a year before and the data from Google Trends for prediction. Example, to predict the sales of June 2007, it uses the sales of May 2007 and June 2006. Along with that, it also uses the Google Trends data from the current month Jun 2007.
+```{r}
 model2_a <- lm(data = merged_author, sales~lag(sales, 1)+lag(sales,12) + suvs + insurance)
 tidy(model2_a)
 glance(model2_a)
 ```
 
 ## Predict Current Month Data
+The following part shows the making of models and the prediction of the baseline and trends data. It uses the pipeline format described by the author using K=17.
 ```{r warning=FALSE, message=FALSE}
 baseline_a <- merged_author
 trends_a <- merged_author
@@ -67,6 +74,7 @@ for (i in 18:rows){
 ```
 
 ## Compile Data
+This shows the filtering of the proper data for plotting
 ```{r warning=FALSE, message=FALSE}
 actual_a <- merged_author[18:rows,] %>% mutate(label="actual")
 baseline_a <- baseline_a[18:rows,] %>% mutate(label="baseline")
@@ -74,12 +82,14 @@ trends_a <- trends_a[18:rows,] %>% mutate(label="trends")
 ```
 
 ## Mean Absolute Error
+This block shows the calculation of the Mean Absolute Error of the two models. We get an error of 6.34% for baseline model and 5.66% for the trends model, which is a 10.6% improvement which is also mentioned in the paper.
 ```{r warning=FALSE, message=FALSE}
 MAE(baseline_a$sales,actual_a$sales)
 MAE(trends_a$sales,actual_a$sales)
 ```
 
 ## Recession MAE
+This block shows the calculation of the Mean Absolute Error for the recession period. Here we get 8.86% using baseline model and 6.96% using trends model, which is 21.4% improvement.
 ```{r warning=FALSE, message=FALSE}
 recession_trends_a <- trends_a %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
 recession_base_a <- baseline_a %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
@@ -89,6 +99,7 @@ MAE(recession_trends_a$sales,recession_actual_a$sales)
 ```
 
 ## Plot
+This graph shows the replication of the figure shown in the paper, which shows the actual sales, prediction using baseline model and prediction using trends model.
 ```{r warning=FALSE, message=FALSE}
 author_plot_data <- rbind(actual_a, baseline_a, trends_a)
 ggplotly(ggplot(author_plot_data, aes(x=Period, y = sales, color = label, linetype = label))+
@@ -102,7 +113,13 @@ ggplotly(ggplot(author_plot_data, aes(x=Period, y = sales, color = label, linety
 # Predicting using the extracted data
 
 ## Load Data
-From the below mentioned CSV files, the appropriate one can be selected
+The proper version of CSV files with cleaned data is given below which I recreated for the replication of the results that the authors obtained. We modify it a little based on the description in the paper. This data is extracted from the original sources mentioned by the author in the paper. The format of Google Trends data has since changed and hence there is a very small difference between the authors results and the replicated results. 
+
+Sources:
+[Sales: Census](https://www.census.gov/econ/currentdata/dbsearch?program=MARTS&startYear=2004&endYear=2011&categories%5B%5D=441&dataType=SM&geoLevel=US&notAdjusted=1&submit=GET+DATA&releaseScheduleId=)
+[Trucks & SUVs: Google Trends](https://trends.google.com/trends/explore?cat=610&date=2004-01-01%202011-07-01&geo=US)
+[Auto Insurance: Google Trends](https://trends.google.com/trends/explore?cat=467&date=2004-01-01%202011-07-01&geo=US)
+
 ```{r warning=FALSE, message=FALSE}
 merged_extracted <- read_csv("merged_extracted.csv")
 
