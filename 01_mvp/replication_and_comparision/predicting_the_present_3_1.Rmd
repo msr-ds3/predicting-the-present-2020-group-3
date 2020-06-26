@@ -132,16 +132,22 @@ rows <- nrow(merged_extracted)
 ```
 
 ## Model Summary
+The model1_e shows the extracted compiled version of the baseline model which uses the values from the past month and also the data from a year before for prediction. Example, to predict the sales of June 2007, it uses the sales of May 2007 and June 2006.
 ```{r}
 model1_e <- lm(data = merged_extracted, sales~lag(sales, 1)+lag(sales,12))
 tidy(model1_e)
 glance(model1_e)
+```
+
+The model2_e shows the extracted compiled version of the trends model which uses the values from the past month, the data from a year before and the data from Google Trends for prediction. Example, to predict the sales of June 2007, it uses the sales of May 2007 and June 2006. Along with that, it also uses the Google Trends data from the current month Jun 2007.
+```{r}
 model2_e <- lm(data = merged_extracted, sales~lag(sales, 1)+lag(sales,12) + suvs + insurance)
 tidy(model2_e)
 glance(model2_e)
 ```
 
 ## Predict Current Month Data
+The following part shows the making of models and the prediction of the baseline and trends data. It uses the pipeline format described by the extracted using K=17 to replicate the results of the paper.   
 ```{r warning=FALSE, message=FALSE}
 baseline_e <- merged_extracted
 trends_e <- merged_extracted
@@ -155,6 +161,7 @@ for (i in 18:rows){
 ```
 
 ## Compile Data
+This shows the filtering of the proper data for plotting
 ```{r warning=FALSE, message=FALSE}
 actual_e <- merged_extracted[18:rows,] %>% mutate(label="actual")
 baseline_e <- baseline_e[18:rows,] %>% mutate(label="baseline")
@@ -162,12 +169,14 @@ trends_e <- trends_e[18:rows,] %>% mutate(label="trends")
 ```
 
 ## Mean Absolute Error
+This block shows the calculation of the Mean Absolute Error of the two models. We get an error of 6.36% for baseline model and 6.82% for the trends model, which is a 6.74% improvement which is also mentioned in the paper.
 ```{r warning=FALSE, message=FALSE}
 MAE(baseline_e$sales,actual_e$sales)
 MAE(trends_e$sales,actual_e$sales)
 ```
 
 ## Recession MAE
+This block shows the calculation of the Mean Absolute Error for the recession period. Here we get 8.90% using baseline model and 6.82% using trends model, which is 23.3% improvement.
 ```{r warning=FALSE, message=FALSE}
 recession_trends_e <- trends_e %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
 recession_base_e <- baseline_e %>% filter(Period>="2007-12-01"& Period<="2009-06-01")
@@ -177,6 +186,7 @@ MAE(recession_trends_e$sales,recession_actual_e$sales)
 ```
 
 ## Plot
+This graph shows the replication of the figure shown in the paper, which shows the actual sales, prediction using baseline model and prediction using trends model.
 ```{r warning=FALSE, message=FALSE}
 extracted_plot_data <- rbind(actual_e, baseline_e, trends_e)
 ggplotly(ggplot(extracted_plot_data, aes(x=Period, y = sales, color = label, linetype = label))+
