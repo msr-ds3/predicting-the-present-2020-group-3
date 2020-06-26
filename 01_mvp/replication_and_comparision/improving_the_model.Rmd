@@ -1,20 +1,27 @@
 ---
 title: "Improving the Models"
-output:
-html_document:
-df_print: paged
 author: "Krushang Shah & Rajiv Basnet"
 date: "6/24/2020"
+output:
+  html_document:
+    df_print: paged
+    toc: yes
+    toc_depth: '3'
+    
 ---
 
-```{r setup, results='hide', message=FALSE}
+```{r setup, warning=FALSE, message=FALSE}
 library(tidyverse)
 library(modelr)
 library(plotly)
 library(gtrendsR)
 library(caret)
+
 ```
 
+#Attempt to improve the models
+
+## Import most recent data
 Check and work with the data from 2004 to present:
 
 ```{r}
@@ -23,6 +30,7 @@ data <- data %>% mutate(sales = log(sales), Period = as.Date(Period,"%m/%d/%Y"))
 head(data)
 ```
 
+## Check and plot most recent data
 ```{r}
 
 #using models defined in the paper to check how well it works with data from 2011 to present 
@@ -63,6 +71,7 @@ Could the prediction with both Baseline and Google Trends data are more influenc
 
 Here, we will be using lag(sales, 1) and lag(sales, 2) in order to check how well the models would fit the data. 
 
+## Model Improvement 
 ```{r, warning= FALSE}
 all_data <- data %>% 
   rename(actual = sales) %>%
@@ -110,11 +119,15 @@ What improvements could be made to the models without having to use additional d
 
 Let's check it with author's data first.
 
+
+## Import Author's Data
 ```{r}
 author_data <- read.csv("merged_author.csv")
 author_data <- author_data %>% mutate(sales = log(sales), Period = as.Date(Period))
 head(author_data)
 ```
+
+## Check performance on Author's Data with a lag of (1 through 5 months)
 ```{r results='hide', message=FALSE, warning= FALSE}
 
 # checking model performances using data of (1 through 5) months before.
@@ -175,7 +188,7 @@ plot_mae <- data.frame(num_lags, mae_baseline, mae_trends)
 plot_mae
 ```
 
-
+## Plot MAE (Author's Data)
 ```{r}
 
 plot_mae <- plot_mae %>%
@@ -192,7 +205,7 @@ ggplot(plot_mae, aes(x = num_lags, y = mae, color = mae_type)) +
 
 Let's check it again with the new data from 2004 to present.
 
-
+## Check performance on most recent data with a lag of (1 through 5 months)
 ```{r results='hide', message=FALSE, warning= FALSE}
 
 mae_baseline <-c()
@@ -251,6 +264,7 @@ plot_mae <- data.frame(num_lags, mae_baseline, mae_trends)
 plot_mae
 ```
 
+## Plot MAE (Most Recent Data)
 ```{r}
 
 plot_mae <- plot_mae %>%
