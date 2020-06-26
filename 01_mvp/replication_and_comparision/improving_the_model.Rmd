@@ -1,5 +1,5 @@
 ---
-title: "Improving the Model"
+title: "Improving the Models"
 output:
 html_document:
 df_print: paged
@@ -25,7 +25,7 @@ head(data)
 
 ```{r}
 
-#using models defined in the paper to check how well it works with data from 2004 to present 
+#using models defined in the paper to check how well it works with data from 2011 to present 
 all_data <- data %>% 
   rename(actual = sales) %>%
   mutate(baseline = NA, trends = NA) %>%
@@ -40,6 +40,12 @@ for (k in K: (num_rows -1) ) {
   all_data$trends[k + 1] <- predict(model2, all_data[k + 1,])
 }
 
+mae_baseline <- sum(abs(all_data$actual - all_data$baseline), na.rm = TRUE)/(num_rows - 17)
+mae_trends <- sum(abs(all_data$actual - all_data$trends), na.rm = TRUE)/(num_rows - 17)
+
+mae_baseline
+mae_trends
+
 all_data[18:num_rows, ] %>% 
   pivot_longer(c("actual", "baseline", "trends"), names_to = "sales_type", values_to = "num_of_sales") %>%
   ggplot(aes(x = Period, y = num_of_sales, group = sales_type, color = sales_type)) +
@@ -49,18 +55,68 @@ all_data[18:num_rows, ] %>%
   labs(x = "Date", y = "Log of Sales")
 ```
 
+=> There is a significant drop in the actual sales in 2020 (Reason: COVID-19)
 
-Let's check what improvements could be made to the models.
-=> Would the models perform better if we were to use lags though (1:n months)?
-Let's check it with author's data.
+However, even adding the Google Trends data did not actually make an improvement for the prediction in this time.
+
+Could the prediction with both Baseline and Google Trends data are more influenced by lag(sales, 12)?
+
+Here, we will be using lag(sales, 1) and lag(sales, 2) in order to check how well the models would fit the data. 
+
+```{r, warning= FALSE}
+all_data <- data %>% 
+  rename(actual = sales) %>%
+  mutate(baseline = NA, trends = NA) %>%
+  mutate(lag1 = lag(actual, 1), lag2 = lag(actual, 2), lag12 = lag(actual, 12))
+
+K <- 17
+num_rows <- nrow(all_data)
+for (k in K: (num_rows -1) ) {
+  model1 <- lm(actual ~ lag1 + lag2, data = all_data[1:k, ])
+  model2 <- lm(actual ~ lag1 + lag2 + suvs + insurance, data = all_data[1:k, ])
+  all_data$baseline[k + 1] <- predict(model1, all_data[k + 1,])
+  all_data$trends[k + 1] <- predict(model2, all_data[k + 1,])
+}
+
+mae_baseline <- sum(abs(all_data$actual - all_data$baseline), na.rm = TRUE)/(num_rows - 17)
+mae_trends <- sum(abs(all_data$actual - all_data$trends), na.rm = TRUE)/(num_rows - 17)
+
+mae_baseline
+mae_trends
+
+
+all_data[18:num_rows, ] %>% 
+  pivot_longer(c("actual", "baseline", "trends"), names_to = "sales_type", values_to = "num_of_sales") %>%
+  ggplot(aes(x = Period, y = num_of_sales, group = sales_type, color = sales_type)) +
+  geom_line(aes(y = num_of_sales, color = sales_type, linetype= sales_type)) +
+  scale_color_manual(values=c("black", "red", "darkgray")) +
+  scale_linetype_manual(values=c("solid", "dashed", "solid")) +
+  labs(x = "Date", y = "Log of Sales")
+
+```
+
+
+=> It appears that using lag last two months in order to predict the data  kind of fits the graph well. But, the mean absolute error increased. 
+
+Bias-Variance Trade Off?
+
+The function that we use for the model in order to make approximation looks good.
+However, the MAE is compromised.
+
+
+What improvements could be made to the models without having to use additional data?
+
+=> Would the models perform better if we were to use lags though (1:n months) with lag(sales, 12 months)?
+
+Let's check it with author's data first.
 
 ```{r}
 author_data <- read.csv("merged_author.csv")
 author_data <- author_data %>% mutate(sales = log(sales), Period = as.Date(Period))
 head(author_data)
 ```
-
 ```{r results='hide', message=FALSE, warning= FALSE}
+
 # checking model performances using data of (1 through 5) months before.
 
 mae_baseline <-c()
@@ -113,11 +169,109 @@ for (n in num_lags) {
 
 ```
 
+
 ```{r}
-plot_mae <- data.frame(num_lags, mae_baseline, mae_trends) %>%
+plot_mae <- data.frame(num_lags, mae_baseline, mae_trends) 
+plot_mae
+```
+
+
+```{r}
+
+plot_mae <- plot_mae %>%
   pivot_longer(c(-num_lags), names_to = "mae_type", values_to = "mae")
+
 ggplot(plot_mae, aes(x = num_lags, y = mae, color = mae_type)) +
   geom_line() +
   labs(x = "Number of Lags", y = "MAE")
 ```
 
+
+=> Without having to add other data, it can be seen that adding lag(actual, 2) does a slight on the model with Google Trends data, however the MAE on the baseline model does not seem to improve.
+
+
+Let's check it again with the new data from 2004 to present.
+
+
+```{r results='hide', message=FALSE, warning= FALSE}
+
+mae_baseline <-c()
+mae_trends <- c()
+
+all_data <- data %>% 
+  rename(actual = sales) %>%
+  mutate(baseline = NA, trends = NA) %>%
+  mutate(lag12 = lag(actual, 12))
+
+num_rows <- nrow(all_data)
+num_lags <- 1:5
+
+a <- c()
+
+for (n in num_lags) {
+  x <- rep(NA, num_rows)
+  all_data <- cbind(all_data, x)
+  m <- paste("lag", as.character(n), sep = "")
+  names(all_data)[names(all_data) == "x"] <- m
+  all_data <- all_data %>% 
+    mutate(!!m := lag(actual, n))
+  
+  K <- 17
+  
+  outcome <- "actual"
+  
+  variables_mod1 <- all_data %>% select(-c(Period, baseline, trends, actual, suvs, insurance)) %>% names()
+  
+  variables_mod2 <- all_data %>% select(-c(Period, baseline, trends, actual)) %>% names()
+  
+  f1 <- as.formula(paste(outcome, paste(variables_mod1, collapse = " + "), sep = " ~ "))
+  
+  f2 <- as.formula(paste(outcome, paste(variables_mod2, collapse = " + "), sep = " ~ "))
+
+  for (k in K: (num_rows - 1) ) {
+    # get model1 : baseline
+    model1 <- lm( formula = f1, data = all_data[1:k, ])
+
+    #get  model2 : with trends
+    model2 <- lm(formula = f2,  data = all_data[1:k, ])
+
+    all_data$baseline[k + 1] <- predict(model1, all_data[k + 1,])
+    all_data$trends[k + 1] <- predict(model2, all_data[k + 1,])
+  }
+
+  mae_baseline[n] <- sum(abs(all_data$actual - all_data$baseline), na.rm = TRUE)/(num_rows - K)
+  mae_trends[n] <- sum(abs(all_data$actual - all_data$trends), na.rm = TRUE)/(num_rows - K)
+}
+
+```
+
+```{r}
+plot_mae <- data.frame(num_lags, mae_baseline, mae_trends) 
+
+plot_mae
+```
+
+```{r}
+
+plot_mae <- plot_mae %>%
+  pivot_longer(c(-num_lags), names_to = "mae_type", values_to = "mae")
+
+ggplot(plot_mae, aes(x = num_lags, y = mae, color = mae_type)) +
+  geom_line() +
+  labs(x = "Number of Lags", y = "MAE")
+```
+
+=> Overall, on the recent data we can see that including a lag of 2 months makes an improvement to the MAE on both the models.
+
+Better Models? 
+
+Baseline: y(t) = y(t-1) + y(t-2) + y(t-12) 
+AND With Trends: y(t) = y(t-1) + y(t-2) + y(t-12) + suvs + insurance
+
+However, unlike the paper claims, (with a rolling window on 2004 to present), MAE with trends is  greater than that of MAE baseline.
+
+Possible Cause: The time-frame from 2004 to present is pretty long. 
+
+That raises a whole new question again.
+
+Would a moving window work better than the rolling window?
