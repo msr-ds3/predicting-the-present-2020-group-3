@@ -12,7 +12,7 @@ output:
     toc_depth: 3
 ---
 # Predicting using the author data
-
+This notebook is an expansion on the results from the paper [Predicting the Present with Google Trends.](http://people.ischool.berkeley.edu/~hal/Papers/2011/ptp.pdf). In this notebook, we are trying to predict the future as in predict the data for June 2020 in May 2020. The code can be modified to predict more into the future, as in predict the sales for the whole next year.
 ## Setup
 ```{r setup, warning=FALSE, message=FALSE}
 library(scales)
@@ -34,7 +34,15 @@ knitr::opts_chunk$set(
 ```
 
 ## Load Data
-From the below mentioned CSV files, the appropriate one can be selected
+The proper version of CSV files with cleaned data is given below which I recreated for the replication of the results that the authors obtained. We modify it a little based on the description in the paper. This data is extracted from the original sources mentioned by the author in the paper. The format of Google Trends data has since changed and hence there is a very small difference between the authors results and the replicated results. 
+
+Sources:
+
+[Sales: Census](https://www.census.gov/econ/currentdata/dbsearch?program=MARTS&startYear=2004&endYear=2011&categories%5B%5D=441&dataType=SM&geoLevel=US&notAdjusted=1&submit=GET+DATA&releaseScheduleId=)
+
+[Trucks & SUVs: Google Trends](https://trends.google.com/trends/explore?cat=610&date=2004-01-01%202011-07-01&geo=US)
+
+[Auto Insurance: Google Trends](https://trends.google.com/trends/explore?cat=467&date=2004-01-01%202011-07-01&geo=US)
 ```{r}
 merged_author <- read_csv("merged_present.csv")
 
@@ -44,6 +52,7 @@ rows <- nrow(merged_author)
 ```
 
 ## Predict Current Month Data
+The following part shows the making of models and the prediction of the baseline and trends data. It uses the pipeline format described by the author using K=96.
 ```{r}
 model_data <- merged_author
 model_data <- model_data %>% mutate(lag2 =                                       lag(sales,2),lag12=lag(sales,12),suvs1=lag(suvs,1),insurance1=lag(insurance,1))
@@ -66,6 +75,7 @@ glance(model2_t)
 ```
 
 ## Compile Data
+This shows the filtering of the proper data for plotting
 ```{r}
 model_actual <- model_data[K:rows,] %>% mutate(label="actual")
 model_base <- model_base[K:rows,] %>% mutate(label="baseline")
@@ -73,12 +83,14 @@ model_trends <- model_trends[K:rows,] %>% mutate(label="trends")
 ```
 
 ## Mean Absolute Error
+This block shows the calculation of the Mean Absolute Error of the two models. We get an error of 4.80% for baseline model and 5.91% for the trends model.
 ```{r}
 MAE(model_base$sales,model_actual$sales)
 MAE(model_trends$sales,model_actual$sales)
 ```
 
-## Recession MAE
+## Selected Period MAE
+This block shows the calculation of the Mean Absolute Error for the recession period. Here we get 4.26% using baseline model and 5.42% using trends model. We also show the Rsquare values for each type of the data distribution. 
 ```{r}
 period_start <- "2012-01-01"
 period_end <- "2020-01-01"
@@ -93,6 +105,7 @@ cor(part_trends_mod$sales,part_actual_mod$sales)^2
 ```
 
 ## Plot
+This graph shows the replication of the figure shown in the paper, which shows the actual sales, prediction using baseline model and prediction using trends model.
 ```{r}
 model_plot_data <- rbind(model_actual, model_base, model_trends) %>% filter(Period>=period_start& Period<=period_end)
 ggplotly(ggplot(model_plot_data, aes(x=Period, y = sales, color = label, linetype = label))+
